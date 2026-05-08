@@ -104,6 +104,12 @@ PORT=8080 docker compose up -d --build
 
 容器内服务仍监听 `3007`，外部访问 `http://localhost:8080`。
 
+## 自动部署
+
+项目已内置 GitHub Actions 自动部署流程。推送到 `main` 分支后，会自动构建前端并通过 SSH 登录服务器执行 Docker Compose 部署。
+
+需要在 GitHub 仓库的 Actions Secrets 中配置服务器信息，详见 [自动部署说明](docs/deployment.md)。
+
 ## 配置说明
 
 常用环境变量：

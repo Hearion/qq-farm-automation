@@ -1,0 +1,80 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web
+        run: pnpm build:web
+
+  deploy:
+    name: Deploy to server
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          REPOSITORY: ${{ github.repository }}
+          APP_PORT: ${{ secrets.APP_PORT }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          envs: DEPLOY_PATH,REPOSITORY,APP_PORT
+          script_stop: true
+          script: |
+            set -e
+
+            APP_DIR="${DEPLOY_PATH:-/opt/qq-farm-automation}"
+            REPO_URL="https://github.com/${REPOSITORY}.git"
+
+            mkdir -p "$APP_DIR"
+
+            if [ ! -d "$APP_DIR/.git" ]; then
+              git clone "$REPO_URL" "$APP_DIR"
+            fi
+
+            cd "$APP_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+
+            if command -v docker compose >/dev/null 2>&1; then
+              COMPOSE="docker compose"
+            else
+              COMPOSE="docker-compose"
+            fi
+
+            PORT="${APP_PORT:-3007}" $COMPOSE up -d --build --remove-orphans
+            $COMPOSE ps
