@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+web/dist/
+web/stats.html
+core/dist/
+dist/
+*.tgz
+
+# Runtime data
+core/data/
+*.log
+!Update.log
+logs/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Test and cache output
+coverage/
+.cache/
+.vite/
+*.tsbuildinfo

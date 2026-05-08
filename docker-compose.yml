@@ -1,0 +1,34 @@
+services:
+  qq-farm-bot:
+    build:
+      context: .
+      dockerfile: core/Dockerfile
+    image: qq-farm-bot:latest
+    container_name: qq-farm-bot
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3007}:3007"
+    volumes:
+      - qq-farm-data:/app/core/data
+      - qq-farm-logs:/app/core/data/logs
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - NODE_ENV=production
+      - ADMIN_PORT=3007
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3007/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  qq-farm-data:
+    name: qq-farm-data
+  qq-farm-logs:
+    name: qq-farm-logs

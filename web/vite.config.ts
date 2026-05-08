@@ -1,0 +1,73 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath, URL } from 'node:url'
+import vue from '@vitejs/plugin-vue'
+import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig } from 'vite'
+import viteCompression from 'vite-plugin-compression'
+
+const corePackageJson = JSON.parse(readFileSync('../core/package.json', 'utf-8'))
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [
+    vue(),
+    viteCompression({
+      verbose: true,
+      disable: false,
+      threshold: 10240,
+      algorithm: 'gzip',
+      ext: '.gz',
+    }),
+    visualizer({
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('element-plus')) {
+              return 'vendor-element-plus'
+            }
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router') || id.includes('@vueuse')) {
+              return 'vendor-vue'
+            }
+            if (id.includes('axios')) {
+              return 'vendor-axios'
+            }
+            return 'vendor'
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(corePackageJson.version),
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  server: {
+    proxy: {
+      '/socket.io': {
+        target: 'http://localhost:3007',
+        changeOrigin: true,
+        ws: true,
+      },
+      '/api': {
+        target: 'http://localhost:3007',
+        changeOrigin: true,
+      },
+      '/game-config': {
+        target: 'http://localhost:3007',
+        changeOrigin: true,
+      },
+    },
+  },
+})
