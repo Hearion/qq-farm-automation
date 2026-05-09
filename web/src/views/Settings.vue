@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
-import { Lock, Setting, SwitchButton, User } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, Lock, Setting, SwitchButton, User } from '@element-plus/icons-vue'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
@@ -253,12 +253,14 @@ interface BagSeedItem {
   count: number
   requiredLevel: number
   plantSize: number
+  image?: string
 }
 
 const bagSeeds = ref<BagSeedItem[]>([])
 const bagSeedsLoading = ref(false)
 const bagSeedsError = ref<string | null>(null)
 const draggingBagSeedId = ref<number | null>(null)
+const bagSeedImageErrors = ref<Record<number, boolean>>({})
 
 const sortedBagSeeds = computed(() => {
   const priority = localStrategySettings.value.bagSeedPriority || []
@@ -287,6 +289,7 @@ async function fetchBagSeeds() {
     })
     if (res.data.ok) {
       bagSeeds.value = (res.data.data || []).filter((s: BagSeedItem) => Number(s.plantSize || 1) === 1)
+      bagSeedImageErrors.value = {}
     }
   }
   catch (e: any) {
@@ -1118,7 +1121,9 @@ async function handleTestOffline() {
                   </label>
                   <div class="strategy-preview">
                     <span class="truncate">{{ strategyPreviewLabel ?? '加载中...' }}</span>
-                    <div class="i-carbon-chevron-down shrink-0 text-lg text-gray-400" />
+                    <el-icon class="shrink-0 text-gray-400">
+                      <ArrowDown />
+                    </el-icon>
                   </div>
                 </div>
               </div>
@@ -1165,8 +1170,16 @@ async function handleTestOffline() {
                       @dragover.prevent="dragOverBagSeed(seed.seedId, $event)"
                       @drop="dropBagSeed(seed.seedId, $event)"
                     >
-                      <div class="h-8 w-8 flex shrink-0 items-center justify-center rounded bg-amber-100 text-xs text-amber-700 font-bold dark:bg-amber-900/50 dark:text-amber-300">
-                        {{ index + 1 }}
+                      <div class="bag-seed-thumb">
+                        <img
+                          v-if="seed.image && !bagSeedImageErrors[seed.seedId]"
+                          :src="seed.image"
+                          :alt="seed.name"
+                          class="bag-seed-thumb__image"
+                          loading="lazy"
+                          @error="bagSeedImageErrors[seed.seedId] = true"
+                        >
+                        <span v-else class="bag-seed-thumb__fallback">{{ index + 1 }}</span>
                       </div>
                       <div class="min-w-0 flex-1">
                         <div class="truncate text-sm text-gray-800 font-medium dark:text-gray-200">
@@ -1178,18 +1191,20 @@ async function handleTestOffline() {
                       </div>
                       <div class="flex shrink-0 flex-col gap-1">
                         <button
-                          class="rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                          class="bag-seed-order-btn"
                           :disabled="index === 0"
+                          title="上移"
                           @click="moveBagSeed(seed.seedId, -1)"
                         >
-                          <div class="i-carbon-arrow-up text-sm" />
+                          <el-icon><ArrowUp /></el-icon>
                         </button>
                         <button
-                          class="rounded p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                          class="bag-seed-order-btn"
                           :disabled="index === sortedBagSeeds.length - 1"
+                          title="下移"
                           @click="moveBagSeed(seed.seedId, 1)"
                         >
-                          <div class="i-carbon-arrow-down text-sm" />
+                          <el-icon><ArrowDown /></el-icon>
                         </button>
                       </div>
                     </div>
@@ -1925,6 +1940,53 @@ async function handleTestOffline() {
   background: rgba(255, 249, 237, 0.74);
   box-shadow: 0 12px 28px rgba(186, 124, 45, 0.06);
   padding: 14px;
+}
+
+.settings-page .bag-seed-thumb {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(186, 124, 45, 0.1);
+}
+
+.settings-page .bag-seed-thumb__image {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.settings-page .bag-seed-thumb__fallback {
+  color: var(--app-accent);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.settings-page .bag-seed-order-btn {
+  width: 26px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--app-text-muted);
+  transition: all 0.16s ease;
+}
+
+.settings-page .bag-seed-order-btn:hover:not(:disabled) {
+  border-color: rgba(186, 124, 45, 0.28);
+  background: rgba(186, 124, 45, 0.1);
+  color: var(--app-accent-strong);
+}
+
+.settings-page .bag-seed-order-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.32;
 }
 
 .settings-page .quiet-hours-row {
