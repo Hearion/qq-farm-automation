@@ -286,7 +286,7 @@ async function fetchBagSeeds() {
       headers: { 'x-account-id': currentAccountId.value },
     })
     if (res.data.ok) {
-      bagSeeds.value = (res.data.data || []).filter((s: BagSeedItem) => s.plantSize === 1)
+      bagSeeds.value = (res.data.data || []).filter((s: BagSeedItem) => Number(s.plantSize || 1) === 1)
     }
   }
   catch (e: any) {

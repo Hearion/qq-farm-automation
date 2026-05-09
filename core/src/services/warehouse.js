@@ -533,15 +533,18 @@ async function getBagSeeds() {
         if (seedId <= 0 || count <= 0) continue;
 
         const plant = getPlantBySeedId(seedId);
-        if (!plant) continue;
+        const info = getItemById(seedId) || null;
+        const isSeedItem = Number(info && info.type) === 5;
+        if (!plant && !isSeedItem) continue;
 
         const current = merged.get(seedId) || {
             seedId,
-            name: String(plant.name || `种子#${seedId}`),
+            name: String((plant && plant.name) || (info && info.name) || `种子#${seedId}`),
             count: 0,
-            requiredLevel: Math.max(0, Number(plant.land_level_need || 0)),
+            requiredLevel: Math.max(0, Number((plant && plant.land_level_need) || (info && info.level) || 0)),
             image: getSeedImageBySeedId(seedId) || getItemImageById(seedId),
-            plantSize: Math.max(1, Number(plant.size || 1)),
+            plantSize: Math.max(1, Number(plant && plant.size) || 1),
+            knownPlant: !!plant,
         };
         current.count += count;
         merged.set(seedId, current);
