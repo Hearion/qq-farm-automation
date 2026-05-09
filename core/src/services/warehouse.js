@@ -4,7 +4,7 @@
  */
 
 const protobuf = require('protobufjs');
-const { getFruitName, getPlantByFruitId, getPlantBySeedId, getItemById, getItemImageById, getSeedImageBySeedId } = require('../config/gameConfig');
+const { getFruitName, getPlantByFruitId, getPlantBySeedId, getPlantBySeedItemId, getItemById, getItemImageById, getSeedImageBySeedId } = require('../config/gameConfig');
 const { isAutomationOn } = require('../models/store');
 const { sendMsgAsync, networkEvents, getUserState } = require('../utils/network');
 const { types } = require('../utils/proto');
@@ -532,7 +532,7 @@ async function getBagSeeds() {
         const count = toNum(item && item.count);
         if (seedId <= 0 || count <= 0) continue;
 
-        const plant = getPlantBySeedId(seedId);
+        const plant = getPlantBySeedItemId(seedId);
         const info = getItemById(seedId) || null;
         const isSeedItem = Number(info && info.type) === 5;
         if (!plant && !isSeedItem) continue;
@@ -542,7 +542,7 @@ async function getBagSeeds() {
             name: String((plant && plant.name) || (info && info.name) || `种子#${seedId}`),
             count: 0,
             requiredLevel: Math.max(0, Number((plant && plant.land_level_need) || (info && info.level) || 0)),
-            image: getSeedImageBySeedId(seedId) || getItemImageById(seedId),
+            image: getSeedImageBySeedId(seedId) || getSeedImageBySeedId(plant && plant.seed_id) || getItemImageById(seedId),
             plantSize: Math.max(1, Number(plant && plant.size) || 1),
             knownPlant: !!plant,
         };

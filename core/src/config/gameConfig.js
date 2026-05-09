@@ -169,6 +169,33 @@ function getPlantBySeedId(seedId) {
     return seedToPlant.get(seedId);
 }
 
+function getPlantBySeedItemId(itemId) {
+    const id = Number(itemId) || 0;
+    if (id <= 0) return null;
+
+    const direct = seedToPlant.get(id);
+    if (direct) return direct;
+
+    const item = itemInfoMap.get(id);
+    if (!item || Number(item.type) !== 5) return null;
+
+    const candidates = [
+        item.effectDesc,
+        item.name ? String(item.name).replace(/种子$/, '') : '',
+    ].map(value => String(value || '').trim()).filter(Boolean);
+
+    if (candidates.length === 0) return null;
+
+    for (const plant of plantMap.values()) {
+        const plantName = String(plant && plant.name || '').trim();
+        if (plantName && candidates.includes(plantName)) {
+            return plant;
+        }
+    }
+
+    return null;
+}
+
 /**
  * 获取植物名称
  * @param {number} plantId - 植物ID
@@ -341,6 +368,7 @@ module.exports = {
     // 植物配置
     getPlantById,
     getPlantBySeedId,
+    getPlantBySeedItemId,
     getPlantName,
     getPlantNameBySeedId,
     getPlantGrowTime,
