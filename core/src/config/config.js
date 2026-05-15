@@ -5,7 +5,7 @@ const process = require('node:process');
 
 const DEFAULT_SYSTEM_CONFIG = {
     serverUrl: 'wss://gate-obt.nqf.qq.com/prod/ws',
-    clientVersion: '1.11.1.7_20260425',
+    clientVersion: '1.11.3.11_20260508',
     platform: 'qq',
     os: 'iOS',
 };

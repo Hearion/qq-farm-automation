@@ -691,14 +691,14 @@ const systemConfigLoading = ref(false)
 
 const localSystemConfig = ref({
   serverUrl: 'wss://gate-obt.nqf.qq.com/prod/ws',
-  clientVersion: '1.10.0.13_20260417',
+  clientVersion: '1.11.3.11_20260508',
   platform: 'qq',
   os: 'iOS',
 })
 
 const defaultSystemConfig = ref({
   serverUrl: 'wss://gate-obt.nqf.qq.com/prod/ws',
-  clientVersion: '1.10.0.13_20260417',
+  clientVersion: '1.11.3.11_20260508',
   platform: 'qq',
   os: 'iOS',
 })
@@ -774,8 +774,10 @@ async function loadSystemConfig() {
   try {
     const { data } = await api.get('/api/admin/system-config')
     if (data?.ok) {
-      if (data.data.saved) {
-        localSystemConfig.value = { ...data.data.saved }
+      // Prefer saved config, fall back to current runtime config
+      const source = data.data.saved || data.data.current
+      if (source) {
+        localSystemConfig.value = { ...source }
       }
       if (data.data.default) {
         defaultSystemConfig.value = { ...data.data.default }
@@ -1250,7 +1252,7 @@ onMounted(() => {
                   <el-input v-model="localSystemConfig.serverUrl" placeholder="wss://..." />
                 </el-form-item>
                 <el-form-item label="客户端版本">
-                  <el-input v-model="localSystemConfig.clientVersion" placeholder="1.10.0.13_20260417" />
+                  <el-input v-model="localSystemConfig.clientVersion" placeholder="1.11.3.11_20260508" />
                 </el-form-item>
                 <div class="config-row-2col">
                   <el-form-item label="平台">
