@@ -18,12 +18,29 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script: |
+            # 1. 启动 Docker（如果没跑）
+            sudo systemctl start docker 2>/dev/null || true
+
+            # 2. 强制删除旧目录
             cd /opt
-            rm -rf qq-farm-automation
-            git clone --depth 1 https://ghproxy.com/https://github.com/xue256964/qq-farm-automation.git
+            sudo rm -rf qq-farm-automation
+
+            # 3. 克隆（主代理 gh.con.sh，备用 ghproxy.com）
+            git clone --depth 1 https://gh.con.sh/https://github.com/xue256964/qq-farm-automation.git 2>/dev/null || \
+            git clone --depth 1 https://ghproxy.com/https://github.com/xue256964/qq-farm-automation.git 2>/dev/null || \
+            git clone --depth 1 https://github.com/xue256964/qq-farm-automation.git
+
             cd qq-farm-automation
-            docker pull node:20-alpine || docker pull docker.m.daocloud.io/library/node:20-alpine
-            docker tag node:20-alpine node:20-alpine-local 2>/dev/null || docker tag docker.m.daocloud.io/library/node:20-alpine node:20-alpine-local
-            find . -name Dockerfile -exec sed -i "s/FROM node:20-alpine.*/FROM node:20-alpine-local/" {} \;
-            docker compose down 2>/dev/null || true
-            docker compose up -d --build
+
+            # 4. 拉取基础镜像
+            sudo docker pull node:20-alpine 2>/dev/null || \
+            sudo docker pull docker.m.daocloud.io/library/node:20-alpine
+            sudo docker tag node:20-alpine node:20-alpine-local 2>/dev/null || \
+            sudo docker tag docker.m.daocloud.io/library/node:20-alpine node:20-alpine-local
+
+            # 5. 修改 Dockerfile
+            find . -name Dockerfile -exec sudo sed -i "s/FROM node:20-alpine.*/FROM node:20-alpine-local/" {} \;
+
+            # 6. 构建并启动
+            sudo docker compose down 2>/dev/null || true
+            sudo docker compose up -d --build
