@@ -6,61 +6,24 @@ on:
       - main
   workflow_dispatch:
 
-concurrency:
-  group: deploy-production
-  cancel-in-progress: true
-
 jobs:
   deploy:
-    name: Deploy to server
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy over SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          script_stop: true
           script: |
-            set -e
-
-            # 配置 GitHub SSH 主机密钥（避免交互式确认）
-            mkdir -p ~/.ssh
-            ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
-
-            APP_DIR="/opt/qq-farm-automation"
-            REPO_URL="git@github.com:xue256964/qq-farm-automation.git"
-
-            mkdir -p "$APP_DIR"
-
-            if [ ! -d "$APP_DIR/.git" ]; then
-              git clone --depth 1 "$REPO_URL" "$APP_DIR"
-            fi
-
-            cd "$APP_DIR"
-            git remote set-url origin "$REPO_URL"
-            git fetch --depth 1 origin main
-            git reset --hard origin/main
-
-            # 拉取基础镜像（服务器已配置镜像加速器，直接拉取）
-            sudo docker pull node:20-alpine
-            sudo docker tag node:20-alpine node:20-alpine-local
-
-            # 修改 Dockerfile 使用本地镜像
-            find . -maxdepth 3 -name Dockerfile -not -path "*/node_modules/*" -exec sudo sed -i "s/FROM node:20-alpine.*/FROM node:20-alpine-local/" {} \;
-
-            # 选择 Docker Compose 命令
-            if command -v docker compose >/dev/null 2>&1; then
-              COMPOSE="docker compose"
-            else
-              COMPOSE="docker-compose"
-            fi
-
-            # 清理并构建（禁用远程拉取）
-            sudo $COMPOSE down 2>/dev/null || true
-            sudo docker builder prune -a -f
-            sudo DOCKER_BUILDKIT=1 $COMPOSE build --no-cache --pull=false
-            sudo $COMPOSE up -d
-            sudo $COMPOSE ps
+            cd /opt
+            rm -rf qq-farm-automation
+            git clone --depth 1 https://ghproxy.com/https://github.com/xue256964/qq-farm-automation.git
+            cd qq-farm-automation
+            docker pull node:20-alpine || docker pull docker.m.daocloud.io/library/node:20-alpine
+            docker tag node:20-alpine node:20-alpine-local 2>/dev/null || docker tag docker.m.daocloud.io/library/node:20-alpine node:20-alpine-local
+            find . -name Dockerfile -exec sed -i "s/FROM node:20-alpine.*/FROM node:20-alpine-local/" {} \;
+            docker compose down 2>/dev/null || true
+            docker compose up -d --build
