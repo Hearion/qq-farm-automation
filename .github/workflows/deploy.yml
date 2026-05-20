@@ -18,19 +18,37 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script: |
-            # 1. 强制启动 Docker 并等待就绪
+            # 1. 强制启动 Docker 并等待真正就绪
             sudo systemctl start docker 2>/dev/null || true
-            sleep 5
-            # 2. 删除旧目录
+            for i in 1 2 3 4 5; do
+              if sudo docker info >/dev/null 2>&1; then
+                echo "Docker 已就绪"
+                break
+              fi
+              echo "等待 Docker 启动... ($i/5)"
+              sleep 3
+            done
+
+            # 2. 清理旧目录（如果存在）
             sudo rm -rf /opt/qq-farm-automation
-            # 3. 克隆仓库
-            sudo git clone --depth 1 https://github.com/xue256964/qq-farm-automation.git /opt/qq-farm-automation
+
+            cd /opt
+
+            # 3. 克隆仓库（多重代理保底）
+            git clone --depth 1 https://ghproxy.com/https://github.com/xue256964/qq-farm-automation.git 2>/dev/null || \
+            git clone --depth 1 https://gh.con.sh/https://github.com/xue256964/qq-farm-automation.git 2>/dev/null || \
+            git clone --depth 1 https://hub.fastgit.xyz/xue256964/qq-farm-automation.git 2>/dev/null || \
+            git clone --depth 1 https://github.com/xue256964/qq-farm-automation.git
+
             cd /opt/qq-farm-automation
+
             # 4. 拉取基础镜像
             sudo docker pull node:20-alpine 2>/dev/null || sudo docker pull docker.m.daocloud.io/library/node:20-alpine
             sudo docker tag node:20-alpine node:20-alpine-local 2>/dev/null || sudo docker tag docker.m.daocloud.io/library/node:20-alpine node:20-alpine-local
-            # 5. 修改 Dockerfile
+
+            # 5. 修改 Dockerfile 使用本地镜像
             sudo find . -name Dockerfile -exec sudo sed -i "s/FROM node:20-alpine.*/FROM node:20-alpine-local/" {} \;
+
             # 6. 构建并启动
             sudo docker compose down 2>/dev/null || true
             sudo docker compose up -d --build
