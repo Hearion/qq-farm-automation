@@ -1,6 +1,8 @@
 name: Check Build
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
   build:
@@ -14,11 +16,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: pnpm install -r
+        run: corepack pnpm install -r
 
       - name: Build frontend
-        run: pnpm build:web
+        run: corepack pnpm build:web
