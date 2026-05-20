@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy to Server
 
 on:
   push:
@@ -11,70 +11,65 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build web
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.30.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build web
-        run: pnpm build:web
-
   deploy:
     name: Deploy to server
-    needs: build
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          REPOSITORY: ${{ github.repository }}
-          APP_PORT: ${{ secrets.APP_PORT }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          envs: DEPLOY_PATH,REPOSITORY,APP_PORT
           script_stop: true
           script: |
             set -e
 
-            APP_DIR="${DEPLOY_PATH:-/opt/qq-farm-automation}"
-            REPO_URL="https://github.com/${REPOSITORY}.git"
+            APP_DIR="/opt/qq-farm-automation"
+            REPO_URL="https://github.com/${{ github.repository }}.git"
 
             mkdir -p "$APP_DIR"
 
             if [ ! -d "$APP_DIR/.git" ]; then
-              git clone "$REPO_URL" "$APP_DIR"
+              git clone --depth 1 "$REPO_URL" "$APP_DIR"
             fi
 
             cd "$APP_DIR"
             git fetch origin main
             git reset --hard origin/main
 
+            # 配置国内镜像加速器（解决 Docker Hub 429 限制）
+            sudo mkdir -p /etc/docker
+            sudo tee /etc/docker/daemon.json <<-'DOCKEREOF'
+            {
+              "registry-mirrors": [
+                "https://mirror.ccs.tencentyun.com",
+                "https://dockerproxy.com",
+                "https://hub-mirror.c.163.com"
+              ]
+            }
+            DOCKEREOF
+            sudo systemctl daemon-reload
+            sudo systemctl restart docker
+
+            # 从国内源拉取基础镜像并打本地标签
+            sudo docker pull node:20-alpine
+            sudo docker tag node:20-alpine node:20-alpine-local
+
+            # 修改 Dockerfile 使用本地镜像
+            find . -maxdepth 3 -name Dockerfile -not -path "*/node_modules/*" -exec sudo sed -i "s/FROM node:20-alpine.*/FROM node:20-alpine-local/" {} \;
+
+            # 选择 Docker Compose 命令
             if command -v docker compose >/dev/null 2>&1; then
               COMPOSE="docker compose"
             else
               COMPOSE="docker-compose"
             fi
 
-            PORT="${APP_PORT:-3007}" $COMPOSE up -d --build --remove-orphans
-            $COMPOSE ps
+            # 清理并构建（禁用远程拉取）
+            sudo $COMPOSE down 2>/dev/null || true
+            sudo docker builder prune -a -f
+            sudo DOCKER_BUILDKIT=1 $COMPOSE build --no-cache --pull=false
+            sudo $COMPOSE up -d
+            sudo $COMPOSE ps
