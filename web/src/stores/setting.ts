@@ -58,6 +58,7 @@ export interface SettingsState {
   bagSeedFallbackStrategy: string
   intervals: IntervalsConfig
   friendQuietHours: FriendQuietHoursConfig
+  farmQuietHours: FriendQuietHoursConfig
   automation: AutomationConfig
   ui: UIConfig
   offlineReminder: OfflineConfig
@@ -79,6 +80,7 @@ export const useSettingStore = defineStore('setting', () => {
     bagSeedFallbackStrategy: 'level',
     intervals: {},
     friendQuietHours: { enabled: false, start: '23:00', end: '07:00' },
+    farmQuietHours: { enabled: false, start: '23:00', end: '07:00' },
     automation: {},
     ui: {},
     offlineReminder: {
@@ -115,6 +117,7 @@ export const useSettingStore = defineStore('setting', () => {
         settings.value.preferredSeedId = d.preferredSeed || 0
         settings.value.intervals = d.intervals || {}
         settings.value.friendQuietHours = d.friendQuietHours || { enabled: false, start: '23:00', end: '07:00' }
+        settings.value.farmQuietHours = d.farmQuietHours || { enabled: false, start: '23:00', end: '07:00' }
         settings.value.automation = d.automation || {}
         settings.value.ui = d.ui || {}
         settings.value.offlineReminder = d.offlineReminder || {
@@ -155,6 +158,7 @@ export const useSettingStore = defineStore('setting', () => {
         bagSeedFallbackStrategy: newSettings.bagSeedFallbackStrategy ?? 'level',
         intervals: newSettings.intervals,
         friendQuietHours: newSettings.friendQuietHours,
+        farmQuietHours: newSettings.farmQuietHours,
         stealDelaySeconds: newSettings.stealDelaySeconds ?? 0,
         plantOrderRandom: newSettings.plantOrderRandom ?? false,
         plantDelaySeconds: newSettings.plantDelaySeconds ?? 0,
