@@ -18,24 +18,19 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script: |
-            # 1. 强制启动 Docker（解决“无法连接到守护进程”）
-            sudo systemctl start docker 2>/dev/null || sudo service docker start 2>/dev/null || true
-
-            # 2. 用 sudo 删除旧目录，解决权限拒绝
+            # 1. 强制启动 Docker 并等待就绪
+            sudo systemctl start docker 2>/dev/null || true
+            sleep 5
+            # 2. 删除旧目录
             sudo rm -rf /opt/qq-farm-automation
-
-            # 3. 克隆仓库（使用 GitHub 原生 URL，设置超时和重试）
-            sudo git clone --depth 1 --config http.lowSpeedLimit=1000 --config http.lowSpeedTime=60 https://github.com/xue256964/qq-farm-automation.git /opt/qq-farm-automation
-
+            # 3. 克隆仓库
+            sudo git clone --depth 1 https://github.com/xue256964/qq-farm-automation.git /opt/qq-farm-automation
             cd /opt/qq-farm-automation
-
-            # 4. 拉取基础镜像（利用服务器已有的镜像加速器）
+            # 4. 拉取基础镜像
             sudo docker pull node:20-alpine 2>/dev/null || sudo docker pull docker.m.daocloud.io/library/node:20-alpine
             sudo docker tag node:20-alpine node:20-alpine-local 2>/dev/null || sudo docker tag docker.m.daocloud.io/library/node:20-alpine node:20-alpine-local
-
-            # 5. 修改 Dockerfile 使用本地镜像
+            # 5. 修改 Dockerfile
             sudo find . -name Dockerfile -exec sudo sed -i "s/FROM node:20-alpine.*/FROM node:20-alpine-local/" {} \;
-
             # 6. 构建并启动
             sudo docker compose down 2>/dev/null || true
             sudo docker compose up -d --build
