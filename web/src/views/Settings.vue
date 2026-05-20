@@ -224,8 +224,24 @@ const localStrategySettings = ref({
   stealDelaySeconds: 0,
   plantOrderRandom: false,
   plantDelaySeconds: 0,
-  intervals: { farmMin: 2, farmMax: 5, helpMin: 10, helpMax: 15, stealMin: 10, stealMax: 15 },
-  friendQuietHours: { enabled: false, start: '23:00', end: '07:00' },
+  intervals: {
+    farmMin: 2,
+    farmMax: 5,
+    helpMin: 10,
+    helpMax: 15,
+    stealMin: 10,
+    stealMax: 15
+  },
+  friendQuietHours: {
+    enabled: false,
+    start: '23:00',
+    end: '07:00'
+  },
+  farmQuietHours: {
+    enabled: false,
+    start: '23:00',
+    end: '07:00'
+  },
 })
 
 const plantingStrategyOptions = [
