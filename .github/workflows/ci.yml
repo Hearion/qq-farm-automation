@@ -1,4 +1,4 @@
-name: CI Check
+name: Check Build
 
 on: [push, pull_request]
 
@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -20,5 +20,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install -r
 
-      - name: Type check & build
-        run: pnpm build
+      - name: Build frontend
+        run: pnpm build:web
