@@ -1297,7 +1297,51 @@ async function handleTestOffline() {
                 </div>
               </div>
             </section>
+   <section class="strategy-section">
+  <div class="strategy-section__header strategy-section__header--inline">
+    <div>
+      <h4>农场静默时段</h4>
+      <p>启用后，在设定时间内暂停农场相关操作。</p>
+    </div>
 
+    <BaseSwitch
+      v-model="localStrategySettings.farmQuietHours.enabled"
+      label="启用"
+    />
+  </div>
+
+  <div class="quiet-hours-row">
+    <div class="quiet-time-field">
+      <label>开始时间</label>
+
+      <el-time-picker
+        v-model="localStrategySettings.farmQuietHours.start"
+        format="HH:mm"
+        value-format="HH:mm"
+        placeholder="开始"
+        :disabled="!localStrategySettings.farmQuietHours.enabled"
+        :clearable="false"
+        popper-class="settings-time-picker"
+      />
+    </div>
+
+    <span class="quiet-hours-separator">至</span>
+
+    <div class="quiet-time-field">
+      <label>结束时间</label>
+
+      <el-time-picker
+        v-model="localStrategySettings.farmQuietHours.end"
+        format="HH:mm"
+        value-format="HH:mm"
+        placeholder="结束"
+        :disabled="!localStrategySettings.farmQuietHours.enabled"
+        :clearable="false"
+        popper-class="settings-time-picker"
+      />
+    </div>
+  </div>
+</section>
             <section class="strategy-section">
               <div class="strategy-section__header">
                 <div>
