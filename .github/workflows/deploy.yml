@@ -26,15 +26,12 @@ jobs:
           script: |
             set -e
 
-            # 优化 Git 网络连接（避免 TLS 中断）
-            export GIT_CURL_VERBOSE=1
-            export GIT_TRACE=1
-            export GIT_SSL_NO_VERIFY=0
-            export GIT_HTTP_LOW_SPEED_LIMIT=1000
-            export GIT_HTTP_LOW_SPEED_TIME=60
+            # 配置 GitHub SSH 主机密钥（避免交互式确认）
+            mkdir -p ~/.ssh
+            ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
 
             APP_DIR="/opt/qq-farm-automation"
-            REPO_URL="https://github.com/${{ github.repository }}.git"
+            REPO_URL="git@github.com:xue256964/qq-farm-automation.git"
 
             mkdir -p "$APP_DIR"
 
@@ -43,15 +40,8 @@ jobs:
             fi
 
             cd "$APP_DIR"
-
-            # 拉取最新代码（增加重试和超时）
-            for i in 1 2 3; do
-              echo "第 $i 次尝试拉取代码..."
-              git fetch --depth 1 origin main && break
-              echo "拉取失败，等待 10 秒后重试..."
-              sleep 10
-            done
-
+            git remote set-url origin "$REPO_URL"
+            git fetch --depth 1 origin main
             git reset --hard origin/main
 
             # 拉取基础镜像（服务器已配置镜像加速器，直接拉取）
