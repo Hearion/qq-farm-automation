@@ -39,21 +39,7 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            # 配置国内镜像加速器（解决 Docker Hub 429 限制）
-            sudo mkdir -p /etc/docker
-            sudo tee /etc/docker/daemon.json <<-'DOCKEREOF'
-            {
-              "registry-mirrors": [
-                "https://mirror.ccs.tencentyun.com",
-                "https://dockerproxy.com",
-                "https://hub-mirror.c.163.com"
-              ]
-            }
-            DOCKEREOF
-            sudo systemctl daemon-reload
-            sudo systemctl restart docker
-
-            # 从国内源拉取基础镜像并打本地标签
+            # 拉取基础镜像（服务器已配置镜像加速器，直接拉取）
             sudo docker pull node:20-alpine
             sudo docker tag node:20-alpine node:20-alpine-local
 
